@@ -32,10 +32,10 @@ set curl_args -A "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:80.0) Gecko/201001
 
 set page (curl $curl_args $URL || exit 1)
 
-set player_config (echo $page | sd 's/.*config = \{(.+)\};yt.*/\{\1\}/p')
+set player_config (echo $page | sd 's/.*ytInitialPlayerResponse = \{(.+)\};/\{\1\}/p')
 set player_js (curl $curl_args www.youtube.com/(echo $page | sd 's/.*"([^"]+base.js).*/\1/p') || exit 1)
 
-set fmts (echo $player_config | jr '.args.player_response | fromjson | .streamingData.adaptiveFormats | sort_by(-.bitrate)')
+set fmts (echo $player_config | jr '.streamingData.adaptiveFormats | sort_by(-.bitrate)')
 
 # debugging constructs
 echo $page >page.html
