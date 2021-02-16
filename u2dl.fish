@@ -99,7 +99,7 @@ for fmt in video audio
 	set blk 1048576
 	set lft (echo $stream_data | jr '.contentLength')
 	set max $lft
-    
+
     cat (for blk_num in (seq 0 (math -s0 $max/$blk))
 		set off (if test $lft -lt $blk
 			echo $lft
@@ -107,8 +107,8 @@ for fmt in video audio
 			echo $blk
         end)
         set low (math $max-$lft)
-        
-		curl $curl_args -o $blk_num.$fmt.$vid_id $url\&range=$low-(math $low+$off)&
+
+		curl $curl_args -o $blk_num.$fmt.$vid_id $url\&range=$low-(math $low+$off)
         set lft (math $lft-$off-1)
         while test (jobs | wc -l) -ge 8
             wait -n curl
