@@ -1,0 +1,7 @@
+*
+!.gitignore
+!flake.lock
+!flake.nix
+
+!Makefile
+!*.fish
