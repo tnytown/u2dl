@@ -17,7 +17,7 @@ alias jr 'jq -re'
 alias sd 'sed -nE'
 
 function p
-	read -l x
+    read -l x
     #echo -n arg: $argv[1], data: ''
     #printf -- (echo $data | sd "s/%/\\\x/g; s/.*$argv[1]=([^&]*).*/\1/p") >&2
     printf -- (echo $x | sd "s/%/\\\x/g;s/.*$argv[1]=([^&]*).*/\1/p")
@@ -54,68 +54,68 @@ set transform_fn_body (string split ';' (echo $player_js | sd "s/.*$transform_fn
 
 set transform_fn_body $transform_fn_body[2..-2]
 for fmt in video audio
-	set stream_data (echo $fmts | jr '[.[] | select(.mimeType | test("'$fmt'"))][0]')
+    set stream_data (echo $fmts | jr '[.[] | select(.mimeType | test("'$fmt'"))][0]')
 
     #!MINIFIER_ELIDE
     echo $stream_data | jq >&2
     if test -z "$stream_data"
-		exit 2
-	end
+        exit 2
+    end
     #!MINIFIER_ELIDE_END
 
     set sig_ok (echo $stream_data | jr $cipherPath >/dev/null; echo $status)
     #echo $sig_ok >&2
     set url (if test $sig_ok -ne 0
-		# w/o sig: url is 'url' field in json
-		echo $stream_data | jr '.url'
+        # w/o sig: url is 'url' field in json
+        echo $stream_data | jr '.url'
     else
-		# with sig: url is 'url' parameter in 'signatureCipher' json field
-		echo -n $stream_data | jr $cipherPath | p 'url'
+        # with sig: url is 'url' parameter in 'signatureCipher' json field
+        echo -n $stream_data | jr $cipherPath | p 'url'
         echo \&sig=(
-		set sig (echo $stream_data | jr $cipherPath | p 's')
+        set sig (echo $stream_data | jr $cipherPath | p 's')
         #echo transform_fn: $transform_fn, transform_fn_body: $transform_fn_body >&2
-		for transform in $transform_fn_body
-			# var,...
-			set arg (echo $transform | sd 's/[^,]+,([0-9]+)\)/\1/p')
-			set transform_call (echo $transform | sd 's/\(.*$//;s/\./\.\*/p')
-			set pttn (echo $player_js | sd "s/.*$transform_call:function[^\)]+$match_fn_body/\1/p")
-			set sig (switch $pttn
-				case 'a.rev*'
-					echo $sig | rev
-				case 'var c=a*'
-					set sig (echo $sig | string split '')
-					set arg (math $arg%(count $sig)+1)
-					set chr $sig[1]
-					set sig[1] $sig[$arg]
-					set sig[$arg] $chr
-					string join '' $sig
-				case 'a.spl*'
-					set sig (echo $sig | string split '')
+        for transform in $transform_fn_body
+            # var,...
+            set arg (echo $transform | sd 's/[^,]+,([0-9]+)\)/\1/p')
+            set transform_call (echo $transform | sd 's/\(.*$//;s/\./\.\*/p')
+            set pttn (echo $player_js | sd "s/.*$transform_call:function[^\)]+$match_fn_body/\1/p")
+            set sig (switch $pttn
+                case 'a.rev*'
+                    echo $sig | rev
+                case 'var c=a*'
+                    set sig (echo $sig | string split '')
+                    set arg (math $arg%(count $sig)+1)
+                    set chr $sig[1]
+                    set sig[1] $sig[$arg]
+                    set sig[$arg] $chr
+                    string join '' $sig
+                case 'a.spl*'
+                    set sig (echo $sig | string split '')
                     # TODO(aptny): pipe input instead of passing as args?
-					string join '' $sig[(math $arg+1)..-1]
-			end)
-		end
+                    string join '' $sig[(math $arg+1)..-1]
+            end)
+        end
         echo $sig)
     end)
-    
-	set blk 1048576
-	set lft (echo $stream_data | jr '.contentLength')
-	set max $lft
+
+    set blk 1048576
+    set lft (echo $stream_data | jr '.contentLength')
+    set max $lft
 
     cat (for blk_num in (seq 0 (math -s0 $max/$blk))
-		set off (if test $lft -lt $blk
-			echo $lft
+        set off (if test $lft -lt $blk
+            echo $lft
         else
-			echo $blk
+            echo $blk
         end)
         set low (math $max-$lft)
 
-		curl $curl_args -o $blk_num.$fmt.$vid_id $url\&range=$low-(math $low+$off)
+        curl $curl_args -o $blk_num.$fmt.$vid_id $url\&range=$low-(math $low+$off)
         set lft (math $lft-$off-1)
         while test (jobs | wc -l) -ge 8
             wait -n curl
         end
-		echo -ne "\r$low" >&2
+        echo -ne "\r$low" >&2
         echo $blk_num.$fmt.$vid_id
     end
     wait) >$fmt.$vid_id
@@ -125,6 +125,3 @@ ffmpeg -i video.$vid_id -i audio.$vid_id -c copy $vid_id.mkv
 rm *.$vid_id
 
 #echo (echo $audio | jr '.signatureCipher' | urlp url)\&sig=$sig\&range=0-(echo $audio | jr '.contentLength')
-
-
-
