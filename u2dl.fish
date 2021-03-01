@@ -38,9 +38,11 @@ set player_js (curl $curl_args www.youtube.com/(echo $page | sd 's/.*"([^"]+base
 set fmts (echo $player_config | jr '.streamingData.adaptiveFormats | sort_by(-.bitrate)')
 
 # debugging constructs
+#!MINIFIER_ELIDE
 echo $page >page.html
 echo $player_config >config.json
 echo $player_js >player.js
+#!MINIFIER_ELIDE_END
 
 # useful regex fragment(s)
 # ){...}
